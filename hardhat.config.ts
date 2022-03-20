@@ -7,9 +7,10 @@ import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
+//tasks
+require("./scripts/task.ts");
 
 dotenv.config();
-
 
 
 const config: HardhatUserConfig = {

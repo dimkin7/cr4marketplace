@@ -1,29 +1,29 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `npx hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
 import { ethers } from "hardhat";
 
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
+  // deploy
+  const [deployer] = await ethers.getSigners();
+  console.log("Deploying contracts with the account:", deployer.address);
+  const balance = await deployer.getBalance();
+  console.log("Account balance:", ethers.utils.formatEther(balance));
 
-  // We get the contract to deploy
-  const Greeter = await ethers.getContractFactory("Greeter");
-  const greeter = await Greeter.deploy("Hello, Hardhat!");
+  const factoryERC20 = await ethers.getContractFactory("DimaERC20");
+  const contractERC20 = await factoryERC20.deploy(ethers.utils.parseUnits("10000.0", 18));
+  await contractERC20.deployed();
+  console.log("Contract DimaERC20 deployed to:", contractERC20.address);
 
-  await greeter.deployed();
+  const factoryMP = await ethers.getContractFactory("DimaMarketplace");
+  const contractMP = await factoryMP.deploy(contractERC20.address);
+  await contractMP.deployed();
+  console.log("Contract DimaMarketplace deployed to:", contractMP.address);
 
-  console.log("Greeter deployed to:", greeter.address);
+  const factoryNFT = await ethers.getContractFactory("DimaNFT");
+  const contractNFT = await factoryNFT.deploy(contractMP.address);
+  await contractNFT.deployed();
+  console.log("Contract DimaNFT deployed to:", contractNFT.address);
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
+// run
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;

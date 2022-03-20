@@ -60,6 +60,8 @@ contract DimaMarketplace is Ownable {
 
     //Selling the item
     function listItem(uint256 tokenId, uint256 price) public {
+        require(price > 0, "Price should be > 0.");
+
         _getNftToMarketplace(tokenId);
 
         //get order if exist
@@ -138,13 +140,14 @@ contract DimaMarketplace is Ownable {
 
     function listItemOnAuction(uint256 tokenId, uint256 minPrice) public {
         require(minPrice > 0, "Min price should be > 0.");
+
         _getNftToMarketplace(tokenId);
 
         //get auction if exist
         Auction memory auction = listingAuction[tokenId];
         require(
             false == auction.statusOnSale,
-            "The auction is already working."
+            "The auction is already working." //It's impossible because NFT goes to Marketplace
         );
         delete auction; //clear fields
         auction.seller = msg.sender;
@@ -186,36 +189,36 @@ contract DimaMarketplace is Ownable {
         emit MakeBid(tokenId, price, msg.sender);
     }
 
-    event FinishAuction();
+    event FinishAuction(uint256 tokenId, bool success);
 
     //finish and send NFT to the winner
     function finishAuction(uint256 tokenId) public {
         bool res;
+        bool success;
         Auction memory auction = listingAuction[tokenId];
         require(true == auction.statusOnSale, "There is no auction.");
 
         //the auction lasts 3 days
-        require(
-            auction.startTime + 3 days <= block.timestamp,
-            "Wait more time."
-        );
+        require(auction.startTime + 3 days <= block.timestamp, "Wait 3 days.");
 
         //auction was successful
         if (auction.bidCount > 2) {
             mNFT.transferFrom(address(this), auction.bidder, tokenId);
             res = mERC20.transfer(auction.seller, auction.curPrice);
             require(true == res, "ERC20 transfer fails.");
+            success = true;
         } else {
             //cancel auction
             _returnNftAndTokens(auction, tokenId);
         }
 
+        console.log("success:", success);
+
         //update status
         auction.statusOnSale = false;
         listingAuction[tokenId] = auction;
-
         //event
-        emit FinishAuction();
+        emit FinishAuction(tokenId, success);
     }
 
     event CancelAuction(uint256 tokenId, address seller);

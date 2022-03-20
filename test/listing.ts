@@ -17,8 +17,6 @@ describe("Marketplace", function () {
   const TOKEN_ID_1 = 1;
 
   before(async function () {
-    console.log("before");
-
     [owner, creator, ownerNFT, buyer1] = await ethers.getSigners();
 
     //create erc20
@@ -57,6 +55,14 @@ describe("Marketplace", function () {
       await expect(nft.mint(TOKEN_URI_1, ownerNFT.address)).to.be.reverted;
     });
 
+    it("List not owner", async function () {
+      await expect(marketplace.connect(buyer1).listItem(TOKEN_ID_1, ethers.utils.parseUnits("5.0", 18))).to.be.revertedWith("You are not the owner.");
+    });
+
+
+    it("List with 0 price", async function () {
+      await expect(marketplace.connect(ownerNFT).listItem(TOKEN_ID_1, ethers.utils.parseUnits("0.0", 18))).to.be.revertedWith("Price should be > 0.");
+    });
 
     it("List item", async function () {
       //approve
@@ -66,6 +72,11 @@ describe("Marketplace", function () {
         .to.emit(marketplace, "ItemListed")
         .withArgs(TOKEN_ID_1, ownerNFT.address, ethers.utils.parseUnits("5.0", 18));  //event ItemListed(uint256 tokenId, address seller, uint256 price);
       expect(await nft.ownerOf(TOKEN_ID_1)).to.equal(marketplace.address);
+    });
+
+
+    it("Cancel non seller", async function () {
+      await expect(marketplace.connect(buyer1).cancel(TOKEN_ID_1)).to.be.revertedWith("You are not the seller.");
     });
 
     it("Cancel listing", async function () {
@@ -127,6 +138,11 @@ describe("Marketplace", function () {
     it("Buy 2 error", async function () {
       await expect(marketplace.connect(buyer1).buyItem(TOKEN_ID_1)).to.be.revertedWith("Token isn't on sale.");
     });
+
+    it("Cancel after sell", async function () {
+      await expect(marketplace.connect(ownerNFT).cancel(TOKEN_ID_1)).to.be.revertedWith("Token isn't on sale.");
+    });
+
 
   });
 
